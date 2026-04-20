@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+requests
+beautifulsoup4
+pandas
+openpyxl
+lxml
+firebase-admin
+python-dotenv
