@@ -1,13 +1,16 @@
 import firebase_admin
+import os
 from firebase_admin import credentials, firestore
 from datetime import datetime
 
 # Inicializar Firebase solo una vez
 if not firebase_admin._apps:
-    cred = credentials.Certificate("serviceAccountKey.json")
+    firebase_path = os.getenv("FIREBASE_CREDENTIALS")
+    cred = credentials.Certificate(firebase_path)
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
+
 
 
 def _upload_collection(col_ref, items: list):
