@@ -114,3 +114,58 @@ def get_lnfa1_top_players() -> dict:
         "total_players": len(players),
         "top10": sorted_players[:10],
     }
+
+
+# ------------------------------------------------------------------
+# DETALLE DE EQUIPO
+# ------------------------------------------------------------------
+
+def get_lnfa1_team_detail(team_name: str) -> dict:
+    """
+    Devuelve las stats de un equipo (buscándolo en East o West) 
+    + top 5 jugadores de ese equipo.
+    """
+    base = db.collection("lnfa1")
+
+    # Buscar equipo en East
+    east_docs = base.document("standings").collection("east").stream()
+    west_docs = base.document("standings").collection("west").stream()
+
+    team_data = None
+    conference = None
+
+    for doc in east_docs:
+        t = doc.to_dict()
+        if t.get("Equipo", "").lower() == team_name.lower():
+            team_data = t
+            conference = "East"
+            break
+
+    if not team_data:
+        for doc in west_docs:
+            t = doc.to_dict()
+            if t.get("Equipo", "").lower() == team_name.lower():
+                team_data = t
+                conference = "West"
+                break
+
+    if not team_data:
+        raise ValueError(f"Equipo '{team_name}' no encontrado en LNFA1")
+
+    # Top 5 jugadores del equipo
+    players_docs = base.document("players").collection("list").stream()
+    team_players = [
+        doc.to_dict()
+        for doc in players_docs
+        if doc.to_dict().get("team", "").lower() == team_name.lower()
+    ]
+
+    sorted_team_players = sorted(team_players, key=lambda p: -_safe_int(p.get("pts", 0)))
+
+    return {
+        "last_updated": _get_last_updated(),
+        "team": team_data,
+        "conference": conference,
+        "top_players": sorted_team_players[:5],
+        "total_team_players": len(team_players),
+    }

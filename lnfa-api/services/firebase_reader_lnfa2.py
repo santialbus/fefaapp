@@ -119,3 +119,50 @@ def get_lnfa2_top_players() -> dict:
         "total_players": len(players),
         "top10": sorted_players[:10],
     }
+
+
+# ------------------------------------------------------------------
+# DETALLE DE EQUIPO
+# ------------------------------------------------------------------
+
+def get_lnfa2_team_detail(team_name: str) -> dict:
+    """
+    Devuelve las stats de un equipo (buscándolo en las 5 regiones)
+    + top 5 jugadores de ese equipo.
+    """
+    base = db.collection("lnfa2").document("standings")
+
+    team_data = None
+    region = None
+
+    for reg in REGIONS:
+        docs = base.collection(reg).stream()
+        for doc in docs:
+            t = doc.to_dict()
+            if t.get("Equipo", "").lower() == team_name.lower():
+                team_data = t
+                region = reg
+                break
+        if team_data:
+            break
+
+    if not team_data:
+        raise ValueError(f"Equipo '{team_name}' no encontrado en LNFA2")
+
+    # Top 5 jugadores del equipo
+    players_docs = db.collection("lnfa2").document("players").collection("list").stream()
+    team_players = [
+        doc.to_dict()
+        for doc in players_docs
+        if doc.to_dict().get("team", "").lower() == team_name.lower()
+    ]
+
+    sorted_team_players = sorted(team_players, key=lambda p: -_safe_int(p.get("pts", 0)))
+
+    return {
+        "last_updated": _get_last_updated(),
+        "team": team_data,
+        "region": region,
+        "top_players": sorted_team_players[:5],
+        "total_team_players": len(team_players),
+    }
